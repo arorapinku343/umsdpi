@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Major Chatbot — Demo</title>
+
+<!-- ====== STYLES (HTML + CSS) ====== -->
+<style>
+  :root{
+    --bg: #0f1724;
+    --card: #0b1220;
+    --muted: #94a3b8;
+    --accent: #7c3aed;
+    --accent-2: #06b6d4;
+    --user: linear-gradient(135deg,#2563eb,#7c3aed);
+    --bot: linear-gradient(135deg,#0ea5a0,#059669);
+    --surface: #071226;
+    --glass: rgba(255,255,255,0.03);
+    --radius: 14px;
+    --max-width: 1100px;
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:28px;
+    background:
+      radial-gradient(800px 300px at 10% 10%, rgba(124,58,237,0.08), transparent 6%),
+      radial-gradient(600px 240px at 90% 85%, rgba(6,182,212,0.06), transparent 8%),
+      var(--bg);
+  }
+
+  .app {
+    width:100%;
+    max-width:var(--max-width);
+    border-radius:20px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    box-shadow: 0 10px 40px rgba(2,6,23,0.7);
+    display:grid;
+    grid-template-columns: 320px 1fr;
+    overflow:hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    padding:18px;
+    border-right: 1px solid rgba(255,255,255,0.03);
+    min-height:560px;
+  }
+  .brand {
+    display:flex;gap:12px;align-items:center;margin-bottom:14px;
+  }
+  .logo {
+    width:44px;height:44px;border-radius:10px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:0 6px 18px rgba(124,58,237,0.15);
+  }
+  .brand h1{font-size:16px;margin:0}
+  .brand p{margin:0;font-size:12px;color:var(--muted)}
+
+  .controls {margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .btn {display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:var(--glass);color:white;cursor:pointer;font-size:13px}
+  .btn.ghost {background:transparent;border:1px dashed rgba(255,255,255,0.03);color:var(--muted)}
+  .small {font-size:12px;color:var(--muted);margin-top:8px}
+
+  .preset-list {margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .preset {padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02);font-size:13px;cursor:pointer;color:var(--muted)}
+  .preset:hover{background:rgba(255,255,255,0.02);color:white}
+
+  .footer-note {margin-top:18px;font-size:12px;color:var(--muted);opacity:0.9}
+
+  /* Chat area */
+  .chat-area {
+    position:relative;
+    padding:18px;
+    min-height:560px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.005), rgba(255,255,255,0.002));
+  }
+
+  .header {
+    display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-radius:12px;
+  }
+  .header .title {font-size:15px;font-weight:600}
+  .header .sub {font-size:13px;color:var(--muted)}
+
+  .messages {
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.00) 40px);
+    border-radius:12px;padding:14px;flex:1;overflow:auto;
+    display:flex;flex-direction:column;gap:14px;
+  }
+
+  .bubble {
+    max-width:78%;
+    padding:12px 14px;border-radius:12px;color:white;position:relative;
+    box-shadow: 0 6px 16px rgba(2,6,23,0.45);
+    word-wrap:break-word;
+    line-height:1.35;
+  }
+  .bubble .meta {font-size:11px;color:rgba(255,255,255,0.75);margin-top:8px;opacity:0.9}
+
+  .row {display:flex;gap:10px;align-items:flex-end}
+  .row.user {justify-content:flex-end}
+  .avatar {
+    width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:14px;
+    flex-shrink:0;
+  }
+
+  .bubble.bot {background: linear-gradient(135deg,#0284c7,#06b6d4); border-top-left-radius:4px;}
+  .avatar.bot {background:linear-gradient(135deg,#06b6d4,#0284c7)}
+  .bubble.user {background: linear-gradient(135deg,#7c3aed,#2563eb); border-top-right-radius:4px; text-align:right;}
+  .avatar.user {background:linear-gradient(135deg,#7c3aed,#4f46e5)}
+
+  .typing {font-style:italic;color:var(--muted)}
+
+  /* input area */
+  .composer {
+    display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.03)
+  }
+  .input {
+    flex:1;padding:10px 12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:white;font-size:15px;min-height:48px;outline:none
+  }
+  .send {background:var(--accent);border:none;padding:10px 14px;border-radius:10px;color:white;cursor:pointer}
+  .actions {display:flex;gap:8px;align-items:center}
+
+  /* search bar */
+  .searchbar {display:flex;gap:8px;align-items:center;margin-top:8px}
+  .searchbar input {flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted)}
+
+  /* responsiveness */
+  @media (max-width:980px){
+    .app{grid-template-columns:1fr}
+    .sidebar{order:2}
+    .chat-area{order:1}
+  }
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Chatbot application">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-label="Sidebar">
+      <div class="brand">
+        <div class="logo">CB</div>
+        <div>
+          <h1>Major Chatbot</h1>
+          <p>Demo UI — client-only mode</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="newConv" class="btn">+ New Conversation</button>
+        <button id="exportChat" class="btn">Export Chat (CSV)</button>
+        <button id="exportJSON" class="btn ghost">Export JSON</button>
+
+        <div class="small">Quick prompts</div>
+        <div class="preset-list" id="presets">
+          <div class="preset" data-t="You are a friendly assistant. Keep replies short.">Friendly assistant</div>
+          <div class="preset" data-t="You are an expert developer. Provide concise code and explanation.">Developer mode</div>
+          <div class="preset" data-t="You are a teacher. Explain concepts step-by-step.">Teacher mode</div>
+        </div>
+
+        <div class="small">Settings</div>
+        <label class="small" style="display:block;margin-top:8px">
+          <input type="checkbox" id="persist" checked /> Persist conversation (localStorage)
+        </label>
+
+        <div class="footer-note">Tip: Connect to a backend by changing `sendToBackend()` in the script.</div>
+      </div>
+    </aside>
+
+    <!-- CHAT AREA -->
+    <main class="chat-area" aria-live="polite">
+      <div class="header">
+        <div>
+          <div class="title">Chat — <span id="currentPreset">Friendly assistant</span></div>
+          <div class="sub">Offline demo · Client-side logic</div>
+        </div>
+        <div>
+          <div class="searchbar">
+            <input id="localSearch" placeholder="Search conversation..." aria-label="Search conversation" />
+            <button id="searchBtn" class="btn ghost">Search</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="messages" id="messages" role="list"></section>
+
+      <div class="composer" role="region" aria-label="Message composer">
+        <textarea id="messageInput" class="input" rows="1" placeholder="Type a message — or use quick prompts above"></textarea>
+        <div class="actions">
+          <button id="quick1" class="btn ghost">👍</button>
+          <button id="sendBtn" class="send">Send</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ====== SCRIPT (Logic + Features) ====== -->
+  <script>
+  (function(){
+    // ----- Helpers -----
+    const $ = id => document.getElementById(id);
+    const messagesEl = $('messages');
+    const input = $('messageInput');
+    const sendBtn = $('sendBtn');
+    const newConv = $('newConv');
+    const exportChat = $('exportChat');
+    const exportJSON = $('exportJSON');
+    const persistCheckbox = $('persist');
+    const presets = document.querySelectorAll('.preset');
+    const currentPresetLabel = $('currentPreset');
+    const localSearch = $('localSearch');
+    const searchBtn = $('searchBtn');
+
+    let conversation = []; // {role:'user'|'bot', text, time}
+    let presetPrompt = "You are a friendly assistant. Keep replies short.";
+    let isPersist = true;
+
+    // session id for future server logging
+    let sessionId = localStorage.getItem('major_chat_session_id') || ('sid_' + Math.random().toString(36).slice(2,9));
+    localStorage.setItem('major_chat_session_id', sessionId);
+
+    // ----- Persistence -----
+    function save() {
+      if (!isPersist) return;
+      const data = {conversation, presetPrompt};
+      localStorage.setItem('major_chat_data', JSON.stringify(data));
+    }
+    function load() {
+      try {
+        const raw = localStorage.getItem('major_chat_data');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        conversation = data.conversation || [];
+        presetPrompt = data.presetPrompt || presetPrompt;
+        currentPresetLabel.textContent = (presetPrompt.length>40?presetPrompt.slice(0,36)+'...':presetPrompt);
+      } catch(e) { console.warn('load failed',e) }
+    }
+    // load initial
+    load();
+    isPersist = persistCheckbox.checked;
+
+    // ----- Render -----
+    function formatTime(ts) {
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
+    function render() {
+      messagesEl.innerHTML = '';
+      conversation.forEach((m, idx) => {
+        const row = document.createElement('div');
+        row.className = 'row ' + (m.role === 'user' ? 'user' : 'bot');
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar ' + (m.role==='user' ? 'user' : 'bot');
+        avatar.textContent = m.role==='user' ? 'U' : 'B';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble ' + (m.role==='user' ? 'user' : 'bot');
+        bubble.textContent = m.text;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = formatTime(m.time);
+        bubble.appendChild(meta);
+        if (m.role === 'user') {
+          row.appendChild(bubble);
+          row.appendChild(avatar);
+        } else {
+          row.appendChild(avatar);
+          row.appendChild(bubble);
+        }
+        messagesEl.appendChild(row);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    render();
+
+    // ----- Chat logic: local reply generator (you can replace with backend) -----
+    function generateReplyLocal(userText) {
+      // simple rule-based + preset usage — extend as needed
+      const t = userText.toLowerCase();
+      if (/(hi|hello|hey|namaste|hola)\b/.test(t)) return "Hi! How can I help you today?";
+      if (t.includes('help')) return "I can: remember short notes, answer simple Qs, export chat. Try: 'remember this: buy milk'.";
+      const m = userText.match(/^remember this:\s*(.+)/i);
+      if (m) {
+        const note = m[1].trim();
+        // store as bot reply confirming memory
+        return `Noted: "${note}" — I'll remember that for this session.`;
+      }
+      // fallback: echo with preset context
+      const presetHint = presetPrompt ? (" [" + presetPrompt.split('.')[0] + "...]") : "";
+      return "Echo: \"" + userText + "\"" + presetHint;
+    }
+
+    // Send flow (user message -> local backend generator -> bot reply)
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      const ts = new Date().toISOString();
+      conversation.push({role:'user', text, time:ts});
+      input.value = '';
+      render();
+      save();
+
+      // show typing placeholder
+      const typingEntry = {role:'bot', text:'...', time:new Date().toISOString()};
+      conversation.push(typingEntry);
+      render();
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      // simulate latency
+      await new Promise(r => setTimeout(r, 600 + Math.random()*800));
+
+      // remove typing placeholder (last bot)
+      if (conversation.length && conversation[conversation.length-1].text === '...') conversation.pop();
+
+      // get reply (local or server)
+      let reply;
+      try {
+        // Replace this: choose local or server send
+        // reply = await sendToBackend(text); // -> uncomment if you implement server
+        reply = generateReplyLocal(text);
+      } catch (e) {
+        reply = "Sorry — failed to get a reply.";
+      }
+
+      conversation.push({role:'bot', text: reply, time:new Date().toISOString()});
+      render();
+      save();
+    }
+
+    // ----- Hook send button & enter key -----
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // ----- New conversation -----
+    newConv.addEventListener('click', ()=> {
+      if (!confirm('Start a new conversation? This will clear the current chat.')) return;
+      conversation = [];
+      save();
+      render();
+    });
+
+    // ----- Preset prompt selection -----
+    presets.forEach(p => p.addEventListener('click', ()=> {
+      presetPrompt = p.dataset.t;
+      currentPresetLabel.textContent = p.textContent;
+      save();
+    }));
+
+    // ----- Export chat CSV / JSON -----
+    function downloadBlob(filename, blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    exportChat.addEventListener('click', ()=> {
+      if (!conversation.length) { alert('No chat to export'); return; }
+      // CSV: timestamp, role, text (quote-safe)
+      const rows = [['timestamp','role','text']];
+      conversation.forEach(c => rows.push([c.time, c.role, c.text.replace(/\n/g,' \\n ')]));
+      const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+      downloadBlob('chat_export.csv', new Blob([csv], {type:'text/csv'}));
+    });
+
+    exportJSON.addEventListener('click', ()=> {
+      downloadBlob('chat_export.json', new Blob([JSON.stringify({conversation,presetPrompt},null,2)], {type:'application/json'}));
+    });
+
+    // ----- Persistence toggle -----
+    persistCheckbox.addEventListener('change', (e) => {
+      isPersist = e.target.checked;
+      if (!isPersist) {
+        localStorage.removeItem('major_chat_data');
+      } else save();
+    });
+
+    // ----- Local search -----
+    searchBtn.addEventListener('click', ()=> {
+      const q = localSearch.value.trim().toLowerCase();
+      if (!q) { alert('Type a search query'); return; }
+      const hits = conversation.filter(c => c.text.toLowerCase().includes(q));
+      if (!hits.length) {
+        alert('No matches in conversation.');
+        return;
+      }
+      // highlight results by scrolling to first match
+      const first = hits[0];
+      // re-render and visually emphasize hits (simple: show alert + copy)
+      const formatted = hits.map(h => `[${new Date(h.time).toLocaleString()}] ${h.role.toUpperCase()}: ${h.text}`).join('\n\n');
+      // show results in a dialog — replace with UI modal if desired
+      alert(`Found ${hits.length} matches:\n\n` + formatted);
+    });
+
+    // ----- Quick emoji button -----
+    $('quick1').addEventListener('click', ()=> {
+      input.value += ' 👍';
+      input.focus();
+    });
+
+    // ----- Placeholder: sendToBackend (how to integrate a server) -----
+    // If you add a Flask / Node backend with a /search or /chat endpoint, change this function:
+    async function sendToBackend(userText) {
+      // Example (Flask) - POST to /chat with JSON {session_id, message}
+      // const resp = await fetch('/chat', {
+      //   method:'POST',
+      //   headers:{'Content-Type':'application/json'},
+      //   body: JSON.stringify({session_id: sessionId, message: userText})
+      // });
+      // const data = await resp.json();
+      // return data.reply;
+      throw new Error('No backend configured.');
+    }
+
+    // ----- Keyboard focus -----
+    input.focus();
+  })();
+  </script>
+</body>
+</html>
+
